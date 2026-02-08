@@ -1,21 +1,19 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+import undetected_chromedriver as uc
+from selenium.webdriver.common.by import By
+import time
 
-# Setup headless Chrome
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # run in background
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
+options = uc.ChromeOptions()
+options.add_argument("--headless")  # run in background
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
 
-driver = webdriver.Chrome(options=chrome_options)
+driver = uc.Chrome(options=options)
+
 driver.get("https://commutewell.vercel.app/")
 
-# Wait a few seconds for the page to render
-driver.implicitly_wait(5)
+time.sleep(5)  # wait for page to render
 
-# Get the wellness score
-wellness_elem = driver.find_element("css selector", "div.text-5xl.font-bold.transition-transform")
-wellness_score = wellness_elem.text
-print("Wellness Score:", wellness_score)
+wellness_elem = driver.find_element(By.CSS_SELECTOR, "div.text-5xl.font-bold.transition-transform")
+print("Wellness Score:", wellness_elem.text)
 
 driver.quit()
