@@ -1,156 +1,128 @@
 import tkinter as tk
 import json
+import time
 from datetime import datetime
+import os
 
-JSON_FILE = "/home/pi/commute_data.json"
-REFRESH_INTERVAL = 30000  # 30 seconds
+JSON_PATH = "/home/pi/commute_data.json"
+REFRESH_MS = 3000   # auto update every 3 seconds
 
-def fetch_data():
-    with open(JSON_FILE) as f:
+# ---------- Helpers ----------
+
+def load_data():
+    with open(JSON_PATH) as f:
         return json.load(f)
 
-def update_dashboard():
-    data = fetch_data()
-    now = datetime.now()
-
-    date_label.config(text=now.strftime("%A, %B %d"))
-
-    wellness = int(data["wellness_score"])
-    wellness_label.config(text=f"{wellness}/100")
-
-    if wellness >= 80:
-        msg = "You're in a great headspace 🚗✨"
-        bar_color = "#4CAF50"
-    elif wellness >= 50:
-        msg = "Doing okay — stay mindful 🌤️"
-        bar_color = "#FFC107"
+def encouragement(score):
+    if score >= 80:
+        return "You’re in a great headspace today 🚗✨"
+    elif score >= 50:
+        return "You’re doing okay — stay mindful 💛"
     else:
-        msg = "Slow down. Breathe. You've got this 💙"
-        bar_color = "#F44336"
+        return "Be gentle with yourself today 🌱"
 
-    message_label.config(text=msg)
-
-    progress_bar.config(width=wellness * 3, bg=bar_color)
-
-    focus_label.config(
-        text=f"Today's Focus:\n{data['today_focus']}"
-    )
-
-    weekly_label.config(
-        text=(
-            f"Streak: {data['streak']} days\n"
-            f"Tasks: {data['tasks_completed']}/{data['tasks_total']}\n"
-            f"Time in car: {data['time_in_car']} min"
-        )
-    )
-
-    trends_label.config(
-        text=(
-            f"Energy: {data['energy']}   "
-            f"Stress: {data['stress']}   "
-            f"Comfort: {data['comfort']}"
-        )
-    )
-
-    root.after(REFRESH_INTERVAL, update_dashboard)
-
-def animate_bar(bar, target_width, step=5):
+def animate_bar(bar, target):
     current = bar.winfo_width()
-    if current < target_width:
-        bar.config(width=min(current + step, target_width))
-        bar.after(10, animate_bar, bar, target_width)
-    elif current > target_width:
-        bar.config(width=max(current - step, target_width))
-        bar.after(10, animate_bar, bar, target_width)
+    if current < target:
+        bar.config(width=min(current + 5, target))
+        bar.after(10, animate_bar, bar, target)
+    elif current > target:
+        bar.config(width=max(current - 5, target))
+        bar.after(10, animate_bar, bar, target)
 
-# --- UI SETUP ---
+# ---------- UI ----------
+
 root = tk.Tk()
 root.title("Commute Well")
-root.geometry("480x320")
 root.configure(bg="black")
+root.attributes("-fullscreen", True)
+root.bind("<Escape>", lambda e: root.destroy())
 
+# App Title
 title = tk.Label(
     root, text="Commute Well",
-    font=("Helvetica", 22, "bold"),
-    fg="white", bg="black"
+    font=("Helvetica Neue", 26, "bold"),
+    fg="#E5E7EB", bg="black"
 )
-title.pack(pady=5)
+title.pack(pady=(20, 5))
 
+# Date
 date_label = tk.Label(
-    root, font=("Helvetica", 14),
-    fg="white", bg="black"
+    root,
+    font=("Helvetica", 13),
+    fg="#9CA3AF", bg="black"
 )
 date_label.pack()
 
-score_frame = tk.Frame(root, bg="black")
-score_frame.pack(pady=5)
-
+# Wellness Score
 wellness_label = tk.Label(
-    score_frame,
-    font=("Helvetica", 36, "bold"),
-    fg="white", bg="black"
+    root,
+    font=("Helvetica Neue", 46, "bold"),
+    fg="#F9FAFB", bg="black"
 )
-wellness_label.pack()
+wellness_label.pack(pady=(20, 5))
 
 message_label = tk.Label(
-    root, font=("Helvetica", 12),
-    fg="white", bg="black"
+    root,
+    font=("Helvetica", 13),
+    fg="#D1D5DB", bg="black"
 )
 message_label.pack()
 
-bar_bg = tk.Frame(root, bg="#333333", width=300, height=16)
-bar_bg.pack(pady=6)
-bar_bg.pack_propagate(False)
+# Progress Bar
+progress_bg = tk.Frame(root, bg="#333333", width=320, height=12)
+progress_bg.pack(pady=10)
+progress_bg.pack_propagate(False)
 
-progress_bar = tk.Frame(bar_bg, height=16, width=0, bg="green")
+progress_bar = tk.Frame(progress_bg, bg="#22C55E", width=0, height=12)
 progress_bar.pack(side="left")
 
+# Today's Focus
 focus_label = tk.Label(
-    root, font=("Helvetica", 12),
-    fg="white", bg="black",
-    justify="center", wraplength=440
+    root,
+    font=("Helvetica", 14, "bold"),
+    fg="#E5E7EB", bg="black",
+    text="Today's Focus:"
 )
-focus_label.pack(pady=6)
+focus_label.pack(pady=(20, 2))
 
+focus_text = tk.Label(
+    root,
+    font=("Helvetica", 13),
+    fg="#D1D5DB", bg="black",
+    wraplength=360, justify="center"
+)
+focus_text.pack()
+
+# Weekly Progress
 weekly_label = tk.Label(
-    root, font=("Helvetica", 11),
-    fg="white", bg="black",
-    justify="left"
+    root,
+    text="This Week's Progress",
+    font=("Helvetica", 16, "bold"),
+    fg="#E5E7EB", bg="black"
 )
-weekly_label.pack()
+weekly_label.pack(pady=(25, 5))
 
-#trends_label = tk.Label(
-    #root, font=("Helvetica", 11),
-    #fg="white", bg="black
-#)
-def create_trend(label_text, color):
+weekly_text = tk.Label(
+    root,
+    font=("Helvetica", 12),
+    fg="#D1D5DB", bg="black"
+)
+weekly_text.pack()
+
+# Trend Bars
+def create_trend(label, color):
     frame = tk.Frame(root, bg="black")
-    frame.pack(pady=2)
+    frame.pack(pady=3)
 
-    label = tk.Label(
-        frame, text=label_text,
+    tk.Label(
+        frame, text=label,
         font=("Helvetica", 11),
-        fg="white", bg="black", width=10, anchor="w"
-    )
-    label.pack(side="left")
+        fg="white", bg="black", width=9, anchor="w"
+    ).pack(side="left")
 
     bg = tk.Frame(frame, bg="#333333", width=220, height=10)
-    bg.pack(side="left", padx=5)
+    bg.pack(side="left", padx=6)
     bg.pack_propagate(False)
 
-    bar = tk.Frame(bg, bg=color, width=0, height=10)
-    bar.pack(side="left")
-
-    return bar
-energy_bar = create_trend("Energy", "#4CAF50")
-stress_bar = create_trend("Stress", "#FF7043")
-comfort_bar = create_trend("Comfort", "#42A5F5")
-trends_label.pack(pady=4)
-
-update_dashboard(
-    animate_bar(energy_bar, int(data["energy"]) * 2)
-    animate_bar(stress_bar, int(data["stress"]) * 2)
-    animate_bar(comfort_bar, int(data["comfort"]) * 2)
-
-)
-root.mainloop()
+    bar = tk.
