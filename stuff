@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 import os
 
-JSON_PATH = "/home/pi/commute_data.json"
+JSON_PATH = "/home/seca-razbpi/commute_data.json"
 REFRESH_MS = 3000   # auto update every 3 seconds
 
 # ---------- Helpers ----------
@@ -33,7 +33,6 @@ def animate_bar(bar, target):
 # ---------- UI ----------
 
 root = tk.Tk()
-root.title("Commute Well")
 root.configure(bg="black")
 root.attributes("-fullscreen", True)
 root.bind("<Escape>", lambda e: root.destroy())
@@ -125,4 +124,47 @@ def create_trend(label, color):
     bg.pack(side="left", padx=6)
     bg.pack_propagate(False)
 
-    bar = tk.
+    bar = tk.Frame(bg, bg=color, width=0, height=10)
+    bar.pack(side="left")
+
+    return bar
+
+energy_bar = create_trend("Energy", "#22C55E")
+stress_bar = create_trend("Stress", "#EF4444")
+comfort_bar = create_trend("Comfort", "#3B82F6")
+
+# ---------- Update Loop ----------
+
+def update_dashboard():
+    try:
+        data = load_data()
+
+        today = datetime.now().strftime("%A, %B %d")
+        date_label.config(text=today)
+
+        score = data["wellness_score"]
+        wellness_label.config(text=f"{score} / 100")
+        message_label.config(text=encouragement(score))
+
+        progress_bar.config(bg="#22C55E" if score >= 70 else "#EAB308" if score >= 40 else "#EF4444")
+        animate_bar(progress_bar, int(score * 3.2))
+
+        focus_text.config(text=data["today_focus"])
+
+        weekly_text.config(
+            text=f"🔥 Streak: {data['streak']} days   "
+                 f"✅ Tasks: {data['tasks_completed']}/{data['tasks_total']}   "
+                 f"🚗 Time in car: {data['time_in_car']} min"
+        )
+
+        animate_bar(energy_bar, int(data["energy"]) * 2)
+        animate_bar(stress_bar, int(data["stress"]) * 2)
+        animate_bar(comfort_bar, int(data["comfort"]) * 2)
+
+    except Exception as e:
+        message_label.config(text="Waiting for data...")
+
+    root.after(REFRESH_MS, update_dashboard)
+
+update_dashboard()
+root.mainloop()
