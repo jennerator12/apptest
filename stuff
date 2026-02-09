@@ -1,13 +1,11 @@
-import pandas as pd
-
-url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTHfEfk_F9EvwGLOCTnuKo8xiYlsQqeTIjDX7wcrKBfIE-OyZlLl4xLzPkpdruJKZL7cTW0Jjds59yw/pub?output=csv"
-
-df = pd.read_csv(url)
-
-data = df.iloc[0]  # first row
-print("Wellness Score:", data['wellness_score'])
-print("Today's Focus:", data['today_focus'])
-print("Streak:", data['streak'])
-print("Tasks Completed:", data['tasks_completed'], "/", data['tasks_total'])
-print("Time in Car:", data['time_in_car'])
-print("Trends - Energy:", data['energy'], "Stress:", data['stress'], "Comfort:", data['comfort'])
+{
+  "wellness_score": 75,
+  "today_focus": "Take 5 deep breaths before starting your drive",
+  "streak": 4,
+  "tasks_completed": 2,
+  "tasks_total": 4,
+  "time_in_car": 82,
+  "energy": 68,
+  "stress": 30,
+  "comfort": 80
+}
