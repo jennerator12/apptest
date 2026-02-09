@@ -54,6 +54,15 @@ def update_dashboard():
 
     root.after(REFRESH_INTERVAL, update_dashboard)
 
+def animate_bar(bar, target_width, step=5):
+    current = bar.winfo_width()
+    if current < target_width:
+        bar.config(width=min(current + step, target_width))
+        bar.after(10, animate_bar, bar, target_width)
+    elif current > target_width:
+        bar.config(width=max(current - step, target_width))
+        bar.after(10, animate_bar, bar, target_width)
+
 # --- UI SETUP ---
 root = tk.Tk()
 root.title("Commute Well")
