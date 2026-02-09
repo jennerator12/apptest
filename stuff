@@ -119,11 +119,38 @@ weekly_label = tk.Label(
 )
 weekly_label.pack()
 
-trends_label = tk.Label(
-    root, font=("Helvetica", 11),
-    fg="white", bg="black"
-)
+#trends_label = tk.Label(
+    #root, font=("Helvetica", 11),
+    #fg="white", bg="black
+#)
+def create_trend(label_text, color):
+    frame = tk.Frame(root, bg="black")
+    frame.pack(pady=2)
+
+    label = tk.Label(
+        frame, text=label_text,
+        font=("Helvetica", 11),
+        fg="white", bg="black", width=10, anchor="w"
+    )
+    label.pack(side="left")
+
+    bg = tk.Frame(frame, bg="#333333", width=220, height=10)
+    bg.pack(side="left", padx=5)
+    bg.pack_propagate(False)
+
+    bar = tk.Frame(bg, bg=color, width=0, height=10)
+    bar.pack(side="left")
+
+    return bar
+energy_bar = create_trend("Energy", "#4CAF50")
+stress_bar = create_trend("Stress", "#FF7043")
+comfort_bar = create_trend("Comfort", "#42A5F5")
 trends_label.pack(pady=4)
 
-update_dashboard()
+update_dashboard(
+    animate_bar(energy_bar, int(data["energy"]) * 2)
+    animate_bar(stress_bar, int(data["stress"]) * 2)
+    animate_bar(comfort_bar, int(data["comfort"]) * 2)
+
+)
 root.mainloop()
