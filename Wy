@@ -1,0 +1,166 @@
+import tkinter as tk
+import time
+from datetime import datetime
+import requests
+
+# ---------- CONFIG ----------
+
+SERVER_URL = "http://localhost:5000/data"
+REFRESH_MS = 3000   # auto update every 3 seconds
+
+# ---------- Helpers ----------
+
+def load_data():
+    response = requests.get(SERVER_URL, timeout=2)
+    return response.json()
+
+def encouragement(score):
+    if score >= 80:
+        return "You’re in a great headspace today 🚗✨"
+    elif score >= 50:
+        return "You’re doing okay — stay mindful 💛"
+    else:
+        return "Be gentle with yourself today 🌱"
+
+def animate_bar(bar, target):
+    current = bar.winfo_width()
+    if current < target:
+        bar.config(width=min(current + 5, target))
+        bar.after(10, animate_bar, bar, target)
+    elif current > target:
+        bar.config(width=max(current - 5, target))
+        bar.after(10, animate_bar, bar, target)
+
+# ---------- UI ----------
+
+root = tk.Tk()
+root.configure(bg="black")
+root.attributes("-fullscreen", True)
+root.bind("<Escape>", lambda e: root.destroy())
+
+title = tk.Label(
+    root, text="Commute Well",
+    font=("Helvetica Neue", 26, "bold"),
+    fg="#E5E7EB", bg="black"
+)
+title.pack(pady=(20, 5))
+
+date_label = tk.Label(
+    root,
+    font=("Helvetica", 13),
+    fg="#9CA3AF", bg="black"
+)
+date_label.pack()
+
+wellness_label = tk.Label(
+    root,
+    font=("Helvetica Neue", 46, "bold"),
+    fg="#F9FAFB", bg="black"
+)
+wellness_label.pack(pady=(20, 5))
+
+message_label = tk.Label(
+    root,
+    font=("Helvetica", 13),
+    fg="#D1D5DB", bg="black"
+)
+message_label.pack()
+
+progress_bg = tk.Frame(root, bg="#333333", width=320, height=12)
+progress_bg.pack(pady=10)
+progress_bg.pack_propagate(False)
+
+progress_bar = tk.Frame(progress_bg, bg="#22C55E", width=0, height=12)
+progress_bar.pack(side="left")
+
+focus_label = tk.Label(
+    root,
+    font=("Helvetica", 14, "bold"),
+    fg="#E5E7EB", bg="black",
+    text="Today's Focus:"
+)
+focus_label.pack(pady=(20, 2))
+
+focus_text = tk.Label(
+    root,
+    font=("Helvetica", 13),
+    fg="#D1D5DB", bg="black",
+    wraplength=360, justify="center"
+)
+focus_text.pack()
+
+weekly_label = tk.Label(
+    root,
+    text="This Week's Progress",
+    font=("Helvetica", 16, "bold"),
+    fg="#E5E7EB", bg="black"
+)
+weekly_label.pack(pady=(25, 5))
+
+weekly_text = tk.Label(
+    root,
+    font=("Helvetica", 12),
+    fg="#D1D5DB", bg="black"
+)
+weekly_text.pack()
+
+def create_trend(label, color):
+    frame = tk.Frame(root, bg="black")
+    frame.pack(pady=3)
+
+    tk.Label(
+        frame, text=label,
+        font=("Helvetica", 11),
+        fg="white", bg="black", width=9, anchor="w"
+    ).pack(side="left")
+
+    bg = tk.Frame(frame, bg="#333333", width=220, height=10)
+    bg.pack(side="left", padx=6)
+    bg.pack_propagate(False)
+
+    bar = tk.Frame(bg, bg=color, width=0, height=10)
+    bar.pack(side="left")
+
+    return bar
+
+energy_bar = create_trend("Energy", "#22C55E")
+stress_bar = create_trend("Stress", "#EF4444")
+comfort_bar = create_trend("Comfort", "#3B82F6")
+
+# ---------- Update Loop ----------
+
+def update_dashboard():
+    try:
+        data = load_data()
+
+        today = datetime.now().strftime("%A, %B %d")
+        date_label.config(text=today)
+
+        score = int(data.get("wellness_score", 0))
+        wellness_label.config(text=f"{score} / 100")
+        message_label.config(text=encouragement(score))
+
+        progress_bar.config(
+            bg="#22C55E" if score >= 70 else "#EAB308" if score >= 40 else "#EF4444"
+        )
+        animate_bar(progress_bar, int(score * 3.2))
+
+        focus_text.config(text=data.get("today_focus", ""))
+
+        weekly_text.config(
+            text=f"🔥 Streak: {data.get('streak', 0)} days   "
+                 f"✅ Tasks: {data.get('tasks_completed', 0)}/{data.get('tasks_total', 0)}   "
+                 f"🚗 Time in car: {data.get('time_in_car', 0)} min"
+        )
+
+        animate_bar(energy_bar, int(data.get("energy", 0)) * 2)
+        animate_bar(stress_bar, int(data.get("stress", 0)) * 2)
+        animate_bar(comfort_bar, int(data.get("comfort", 0)) * 2)
+
+    except Exception:
+        message_label.config(text="Waiting for data...")
+
+    root.after(REFRESH_MS, update_dashboard)
+
+update_dashboard()
+root.mainloop()
